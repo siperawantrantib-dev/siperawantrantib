@@ -727,9 +727,9 @@ function initMap(){
  MAP=L.map('mapEl',{zoomControl:false}).setView([-8.67,115.17],11);
  mapInited=true;
  L.control.zoom({position:'bottomright'}).addTo(MAP);
- L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(MAP);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',maxZoom:19,subdomains:'abc'}).addTo(MAP);
  G1=L.layerGroup().addTo(MAP);G2=L.layerGroup().addTo(MAP);
- MAP.on('tileerror',function(){const el=$('#mapEl');if(el&&!el.querySelector('.tile-warning')){const w=document.createElement('div');w.className='tile-warning';w.style.cssText='position:absolute;z-index:700;left:12px;bottom:12px;max-width:280px;padding:8px 10px;background:#101a26ee;border:1px solid #5c7186;border-radius:8px;color:#e8eef5;font-size:11px';w.textContent='Sebagian peta dasar gagal dimuat. Periksa koneksi internet.';el.appendChild(w);}});
+ MAP.on('tileerror',function(){const el=$('#mapEl');if(el&&!el.querySelector('.tile-warning')){const w=document.createElement('div');w.className='tile-warning';w.style.cssText='position:absolute;z-index:700;left:12px;bottom:12px;max-width:280px;padding:8px 10px;background:#101a26ee;border:1px solid #5c7186;border-radius:8px;color:#e8eef5;font-size:11px';w.textContent='Peta dasar gagal dimuat. Periksa koneksi internet atau layanan OpenStreetMap.';el.appendChild(w);}});
  $('#bandSeg').innerHTML=['Semua','Pagi','Siang','Sore','Malam'].map(b=>`<button class="${b==='Semua'?'on':''}" onclick="setBand('${b}',this)">${b==='Semua'?'🕐 Semua':b+' · '+BANDH[b]}</button>`).join('');
  $('#typeChips').innerHTML=Object.entries(TYPES).map(([t,m])=>`<button class="tchip on" data-t="${t}" style="border-color:${m.c};background:${m.c};color:#0c1520" onclick="tglType('${t}',this)">${m.i} ${t}</button>`).join('');
  $('#legTypes').innerHTML=Object.entries(TYPES).slice(0,4).map(([t,m])=>`<span style="margin-right:8px"><span class="dot" style="background:${m.c}"></span> ${t}</span>`).join('');
@@ -788,7 +788,7 @@ function initMiniMap(lat,lng){
    if(MODALMAP){MODALMAP.remove();MODALMAP=null;MODALMK=null}
    const has=!(isNaN(lat)||isNaN(lng));
    MODALMAP=L.map('miniMap').setView(has?[lat,lng]:[-8.68,115.17],has?15:11);
-   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO'}).addTo(MODALMAP);
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',maxZoom:19,subdomains:'abc'}).addTo(MODALMAP);
    MODALMK=L.marker(has?[lat,lng]:[-8.68,115.17],{draggable:true,icon:PIN}).addTo(MODALMAP);
    MODALMK.on('dragend',()=>{const p=MODALMK.getLatLng();setCoord(p.lat,p.lng,false)});
    MODALMAP.on('click',e=>setCoord(e.latlng.lat,e.latlng.lng,true));
