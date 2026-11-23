@@ -889,7 +889,7 @@ function renderData(){
   <td style="font-size:11px;color:var(--mut)">${esc(i.sumber)}</td>
   <td style="color:${['','#3ddc84','#ff9838','#ff5252'][i.dampak]}">${'●'.repeat(i.dampak)}${'○'.repeat(3-i.dampak)}</td>
   <td>${can('status')?`<select class="stsel st-${String(i.status).replace(/ /g,'')}" onchange="UPD_ST('${i.id}',this.value)">${STATUS.map(s=>`<option ${s===i.status?'selected':''}>${s}</option>`).join('')}</select>`:`<span class="chip" style="color:${ST[i.status]||'#8ba0b5'}">${esc(i.status)}</span>`}</td>
-  <td>${i.foto?`<img class="thumb" loading="lazy" src="${i.foto}" alt="Foto ${esc(i.id)}" onclick="lightbox('${i.id}')" onerror="this.outerHTML='<div class="thumb" title="Foto tidak dapat dimuat">⚠️</div>'">`:'<div class="thumb" title="Belum ada foto">📷</div>'}</td>
+  <td>${i.foto?`<a href="${i.fotoUrl||i.foto}" target="_blank" rel="noopener" title="Buka foto di Google Drive"><img class="thumb" loading="lazy" src="${i.foto}" alt="Foto ${esc(i.id)}" onclick="event.preventDefault();lightbox('${i.id}')" onerror="this.outerHTML='<span class=\"thumb\" title=\"Thumbnail tidak dapat dimuat; klik tautan Drive\">🔗</span>'"></a>`:'<div class="thumb" title="Belum ada foto">📷</div>'}</td>
   <td style="white-space:nowrap"><button class="ibtn" title="Detail" onclick="VIEW_INC('${i.id}')">👁</button>${can('edit')?`<button class="ibtn" title="Edit" onclick="openIncModal('${i.id}')">✎</button>`:''}${can('del')?`<button class="ibtn" title="Hapus" onclick="DEL_INC('${i.id}')">🗑</button>`:''}</td></tr>`).join('')}
  </table></div>
  <div class="pgr"><span>Menampilkan ${pg.length} dari ${rows.length} kejadian</span>
@@ -897,7 +897,7 @@ function renderData(){
 }
 function UPD_ST(id,v){P_ST(id,v)}
 function DEL_INC(id){if(!can('del'))return;if(!confirm('Hapus kejadian '+id+'?'))return;INC=INC.filter(x=>x.id!==id);persist();sheetDel(id);renderData();toast('Kejadian dihapus','ok')}
-function lightbox(id){const i=INC.find(x=>x.id===id);if(!i||!i.foto)return;openModal(`<div class="mh"><h3>📷 Dokumentasi ${id}</h3><button class="x" onclick="closeModal()">✕</button></div><div class="mb"><img src="${i.foto}" style="width:100%;border-radius:10px"></div>`)}
+function lightbox(id){const i=INC.find(x=>x.id===id);if(!i||!i.foto)return;openModal(`<div class="mh"><h3>📷 Dokumentasi ${id}</h3><button class="x" onclick="closeModal()">✕</button></div><div class="mb"><img src="${i.foto}" style="width:100%;border-radius:10px" onerror="this.style.display='none'"><p style="margin-top:10px"><a href="${i.fotoUrl||i.foto}" target="_blank" rel="noopener">↗ Buka foto asli di Google Drive</a></p></div>`)}
 function VIEW_INC(id){
  const i=INC.find(x=>x.id===id);if(!i)return;
  openModal(`<div class="mh"><h3>📋 Detail Kejadian ${i.id}</h3><button class="x" onclick="closeModal()">✕</button></div><div class="mb">
@@ -971,7 +971,7 @@ async function saveInc(id){
  toast(f?'Mengunggah foto ke Google Drive dan menyimpan data…':'Menyimpan data kejadian…');
  try{
    const saved=await sheetSave(i);
-   if(saved&&saved.foto)i.foto=saved.foto;
+   if(saved){if(saved.foto)i.foto=saved.foto;if(saved.fotoId)i.fotoId=saved.fotoId;if(saved.fotoUrl)i.fotoUrl=saved.fotoUrl;}
    persist();
    closeModal();renderData();
    toast(`${i.id} berhasil tersimpan${i.foto?' beserta foto dokumentasi':''}`,'ok');
@@ -982,7 +982,7 @@ async function saveInc(id){
 }
 function compressImg(file){return new Promise(res=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const s=Math.min(1,720/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.72))};img.src=url})}
 function exportCSV(){
- const rows=filtered(),hd=['id','tanggal','jam','zona','lat','lng','jenis','sumber','dampak','berulang','deskripsi','status','foto','petugas'];
+ const rows=filtered(),hd=['id','tanggal','jam','zona','lat','lng','jenis','sumber','dampak','berulang','deskripsi','status','foto','fotoId','fotoUrl','petugas'];
  const csv=[hd.join(';'),...rows.map(i=>hd.map(h=>'"'+String(i[h]??'').replace(/"/g,'""')+'"').join(';'))].join('\n');
  dl('trantib_badung.csv',new Blob(['\ufeff'+csv],{type:'text/csv'}));toast('CSV diekspor','ok');
 }
@@ -1123,7 +1123,7 @@ async function testSheet(){try{const j=await backendGet('ping');toast(j&&j.ok?'�
 async function pullSheet(silent){
  if(!silent)toast('Menarik data dari Spreadsheet…');
  const j=await backendGet('all');
- if(j&&j.incidents){INC=j.incidents.map(x=>{let tg=String(x.tanggal||'').slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(tg)){const d=new Date(x.tanggal);if(!isNaN(d))tg=fmtISO(d)}return{id:String(x.id||''),tanggal:tg,jam:String(x.jam||'00:00').slice(0,5),zona:String(x.zona||''),lat:+x.lat||0,lng:+x.lng||0,jenis:normalizeType(x.jenis),sumber:String(x.sumber||''),dampak:Math.max(1,Math.min(3,+x.dampak||1)),berulang:x.berulang===true||/^(true|ya|1)$/i.test(String(x.berulang)),deskripsi:String(x.deskripsi||''),status:STATUS.includes(x.status)?x.status:'Laporan Masuk',foto:String(x.foto||''),petugas:String(x.petugas||''),updatedAt:x.updatedAt||Date.now()};}).filter(x=>x.id&&x.tanggal);LS.set('pr_inc',INC);updateSyncBadge();if(!silent)toast(INC.length+' kejadian dimuat dari Spreadsheet','ok');return INC.length}throw new Error('Respons backend tidak valid')}
+ if(j&&j.incidents){INC=j.incidents.map(x=>{let tg=String(x.tanggal||'').slice(0,10);if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(tg)){const d=new Date(x.tanggal);if(!isNaN(d))tg=fmtISO(d)}return{id:String(x.id||''),tanggal:tg,jam:String(x.jam||'00:00').slice(0,5),zona:String(x.zona||''),lat:+x.lat||0,lng:+x.lng||0,jenis:normalizeType(x.jenis),sumber:String(x.sumber||''),dampak:Math.max(1,Math.min(3,+x.dampak||1)),berulang:x.berulang===true||/^(true|ya|1)$/i.test(String(x.berulang)),deskripsi:String(x.deskripsi||''),status:STATUS.includes(x.status)?x.status:'Laporan Masuk',foto:String(x.foto||''),fotoId:String(x.fotoId||''),fotoUrl:String(x.fotoUrl||x.foto||''),petugas:String(x.petugas||''),updatedAt:x.updatedAt||Date.now()};}).filter(x=>x.id&&x.tanggal);LS.set('pr_inc',INC);updateSyncBadge();if(!silent)toast(INC.length+' kejadian dimuat dari Spreadsheet','ok');return INC.length}throw new Error('Respons backend tidak valid')}
 async function pushSheet(silent){try{await backendPost({action:'bulk',incidents:INC});await new Promise(r=>setTimeout(r,900));const j=await backendGet('all');if(!j||!j.ok)throw new Error('Backend tidak mengonfirmasi sinkronisasi');if(!silent)toast(`${j.count||0} kejadian tersinkron ke Spreadsheet`,'ok')}catch(e){if(!silent)toast('Gagal mengirim data: '+e.message,'err')}}
 async function sheetSave(i){
  await backendPost({action:'save',incident:{...i,jenis:normalizeType(i.jenis)}});
@@ -1136,8 +1136,8 @@ async function sheetSave(i){
    if(j&&j.ok&&Array.isArray(j.incidents)){
      const saved=j.incidents.find(x=>String(x.id)===String(i.id));
      if(saved){
-       if(i.foto&&/^data:/i.test(String(i.foto))&&!saved.foto){
-         lastError='Data kejadian tersimpan, tetapi URL foto tidak tercatat. Periksa izin Google Drive.';
+       if(i.foto&&/^data:/i.test(String(i.foto))&&!saved.fotoId&&!saved.fotoUrl&&!saved.foto){
+         lastError='Data kejadian tersimpan, tetapi File ID/URL foto tidak tercatat. Periksa izin Google Drive.';
        }else return saved;
      }
    }
