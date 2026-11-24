@@ -573,11 +573,11 @@ function openPublicReport(){
  </div>`,true);
  initMiniMap(first.lat,first.lng);
 }
-function savePublicReport(){
+async function savePublicReport(){
  const des=$('#fDes').value.trim(),la=parseFloat($('#fLat').value),lo=parseFloat($('#fLng').value);
  if(!des)return toast('Uraian kejadian wajib diisi','err');
  if(!Number.isFinite(la)||!Number.isFinite(lo))return toast('Lokasi kejadian wajib ditentukan melalui GPS atau peta','err');
- saveInc('');
+ try{await saveInc('')}catch(err){toast('Laporan gagal diproses: '+(err&&err.message?err.message:'kesalahan tidak diketahui'),'err')}
 }
 function enterApp(){
  $('#loginView').style.display='none';$('#app').classList.remove('hidden');
@@ -985,7 +985,7 @@ async function saveInc(id){
  if(!tgl||!jam)return toast('Tanggal & jam wajib diisi','err');
  const z=ZONES.find(x=>x.n===zn),R2=Math.random;
  let i=id?INC.find(x=>x.id===id):{id:'TRT-'+(Math.max(1000,...INC.map(x=>+String(x.id).slice(4)||0))+1),status:'Laporan Masuk',foto:'',lat:NaN,lng:NaN};
- Object.assign(i,{tanggal:tgl,jam,zona:zn,jenis:$('#fJenis').value,sumber:$('#fSrc').value,dampak:+$('#fDmp').value,berulang:$('#fRep').checked,deskripsi:$('#fDes').value.trim(),petugas:$('#fPet').value.trim()||'—',updatedAt:Date.now()});
+ Object.assign(i,{tanggal:tgl,jam,zona:zn,jenis:$('#fJenis').value,sumber:$('#fSrc').value,dampak:+$('#fDmp').value,berulang:!!($('#fRep')&&$('#fRep').checked),deskripsi:$('#fDes').value.trim(),petugas:$('#fPet').value.trim()||'—',updatedAt:Date.now()});
  const la=parseFloat($('#fLat').value),lo=parseFloat($('#fLng').value);
  if(!isNaN(la)&&!isNaN(lo)){i.lat=+la.toFixed(5);i.lng=+lo.toFixed(5)}
  else if(!id||isNaN(i.lat)){i.lat=+(z.lat+(R2()-0.5)*0.014).toFixed(5);i.lng=+(z.lng+(R2()-0.5)*0.014).toFixed(5);
