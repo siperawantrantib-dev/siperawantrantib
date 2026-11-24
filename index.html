@@ -311,17 +311,10 @@ pre.code{background:#0a1119;border:1px solid var(--line);border-radius:10px;padd
       </div>
       <h2>Masuk Sistem</h2>
       <div class="mut">Gunakan akun resmi yang diberikan administrator.</div>
+      <button class="btn" style="width:100%;justify-content:center;padding:13px;margin:0 0 18px;border:1px solid rgba(61,220,132,.45);background:rgba(61,220,132,.08);color:#72e6a0" onclick="openPublicReport()">📣 LAPORKAN GANGGUAN TRANTIBUM — TANPA LOGIN</button>
       <div class="fld"><label>Username</label><input id="lgU" autocomplete="off"></div>
       <div class="fld"><label>Password</label><input id="lgP" type="password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn gold" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">MASUK KE COMMAND CENTER →</button>
-      <div class="demo"><p>Akun Demonstrasi</p>
-        <div class="row">
-          <button onclick="fill('admin','admin123')">admin</button>
-          <button onclick="fill('kasi','kasi123')">kasi</button>
-          <button onclick="fill('petugas','petugas123')">petugas</button>
-          <button onclick="fill('viewer','viewer123')">viewer</button>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -553,6 +546,39 @@ function doLogin(){
  SESSION={u:usr.u,n:usr.n,r:usr.r};sessionStorage.setItem('pr_ses',JSON.stringify(SESSION));enterApp();
 }
 function doLogout(){sessionStorage.removeItem('pr_ses');SESSION=null;$('#app').classList.add('hidden');$('#loginView').style.display='grid';$('#lgP').value=''}
+
+/* ================= PELAPORAN PUBLIK TANPA LOGIN ================= */
+function openPublicReport(){
+ const first=ZONES[0],now=new Date();
+ const hhmm=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Makassar',hour:'2-digit',minute:'2-digit',hour12:false}).format(now);
+ openModal(`<div class="mh"><h3>📣 Formulir Pelaporan Trantibum</h3><button class="x" onclick="closeModal()">✕</button></div><div class="mb">
+  <div class="note" style="margin-bottom:14px">Formulir ini dapat diisi masyarakat tanpa akun. Mohon isi informasi kejadian dengan benar agar dapat ditindaklanjuti petugas.</div>
+  <div class="frow">
+   <div><label>📅 Tanggal Kejadian *</label><input type="date" id="fTgl" value="${fmtISO(now)}"></div>
+   <div><label>⏰ Jam Kejadian (WITA) *</label><input type="time" id="fJam" value="${hhmm}"></div>
+   <div><label>🏷️ Jenis Gangguan *</label><select id="fJenis">${Object.keys(TYPES).map(t=>`<option>${t}</option>`).join('')}</select></div>
+   <div><label>📍 Wilayah / Zona *</label><select id="fZona" onchange="ZONA_PICK(this.value)">${ZONES.map(z=>`<option>${z.n} — Kec. ${z.k}</option>`).join('')}</select></div>
+  </div>
+  <input type="hidden" id="fSrc" value="Pengaduan Masyarakat"><input type="hidden" id="fDmp" value="1">
+  <div style="border:1px dashed rgba(61,220,132,.4);border-radius:10px;padding:13px;margin-top:14px;background:rgba(61,220,132,.03)">
+   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>📍 LOKASI KEJADIAN *</b><button class="btn sm gold" type="button" onclick="grabGPS()">🛰️ Gunakan Lokasi GPS</button></div>
+   <div id="gpsStat" class="mono" style="font-size:10.5px;color:var(--dim);margin-top:6px">Tekan tombol GPS atau pilih titik pada peta. Lokasi wajib agar laporan dapat diverifikasi.</div>
+   <div class="frow" style="margin-top:6px"><div><label>Latitude *</label><input id="fLat" class="mono" placeholder="-8.xxxxx" onchange="coordEdited()"></div><div><label>Longitude *</label><input id="fLng" class="mono" placeholder="115.xxxxx" onchange="coordEdited()"></div></div>
+   <div id="miniMap" style="height:210px;border-radius:10px;margin-top:9px;border:1px solid var(--line2)"></div>
+  </div>
+  <label>📝 Ceritakan kejadian *</label><textarea id="fDes" rows="4" style="width:100%" placeholder="Jelaskan apa yang terjadi, alamat/patokan lokasi, dan informasi penting lainnya…"></textarea>
+  <div class="frow"><div><label>Nama Pelapor (opsional)</label><input id="fPet" placeholder="Boleh dikosongkan" value="Masyarakat"></div>
+   <div><label>📷 Foto Dokumentasi (opsional)</label><input type="file" id="fFoto" accept="image/*" capture="environment" style="width:100%;padding:7px" onchange="prevFoto(this)"><div id="fotoPrev"></div></div></div>
+  <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap"><button class="btn gold" onclick="savePublicReport()">📨 KIRIM LAPORAN</button><button class="btn ghost" onclick="closeModal()">Batal</button></div>
+ </div>`,true);
+ initMiniMap(first.lat,first.lng);
+}
+function savePublicReport(){
+ const des=$('#fDes').value.trim(),la=parseFloat($('#fLat').value),lo=parseFloat($('#fLng').value);
+ if(!des)return toast('Uraian kejadian wajib diisi','err');
+ if(!Number.isFinite(la)||!Number.isFinite(lo))return toast('Lokasi kejadian wajib ditentukan melalui GPS atau peta','err');
+ saveInc('');
+}
 function enterApp(){
  $('#loginView').style.display='none';$('#app').classList.remove('hidden');
  $('#uName').textContent=SESSION.n;$('#uRole').textContent=({admin:'Administrator',kasi:'Kasi Trantibum',petugas:'Petugas',viewer:'Viewer'})[SESSION.r];
